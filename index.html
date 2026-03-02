@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title> CYBERPUNK TERMINAL · ROOT_ENTITY: AGE++ (mobile)</title>
+    <style>
+        /* ===== HIGH-FIDELITY 16-BIT PIXEL · CYBERPUNK TERMINAL ===== */
+        * {
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            image-rendering: -moz-crisp-edges;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #0c0c0c;
+            font-family: 'Courier New', Courier, 'VT323', monospace;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        /* orientation overlay */
+        #rotate-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0f0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #00ff41;
+            font-size: 8vw;
+            text-align: center;
+            padding: 20px;
+            border: 4px solid #00ff41;
+            box-shadow: inset 0 0 50px #00ff4122;
+            backdrop-filter: blur(2px);
+        }
+        #rotate-overlay.hidden {
+            display: none;
+        }
+        .rotate-icon {
+            font-size: 20vw;
+            margin-bottom: 20px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: rotate(0deg); }
+            50% { opacity: 0.6; transform: rotate(90deg); }
+            100% { opacity: 1; transform: rotate(0deg); }
+        }
+
+        .terminal-container {
+            width: 100%;
+            height: 100%;
+            background: #111111;
+            border: 4px solid #00ff41;
+            box-shadow: 0 0 20px #00ff4188, inset 0 0 10px #00ff4122;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* scanline & flicker */
+        .terminal-container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,255,65,0.03) 0px, rgba(0,0,0,0.5) 2px, transparent 3px);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            color: #00ff41;
+            font-size: 4vw;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #00ff41;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 5px #00ff41;
+            flex-shrink: 0;
+        }
+
+        .glitch {
+            animation: glitch 1.5s infinite;
+        }
+        @keyframes glitch {
+            0% { transform: skew(0deg, 0deg); opacity: 1; }
+            5% { transform: skew(2deg, 1deg); opacity: 0.8; text-shadow: 2px 0 red, -2px 0 blue; }
+            10% { transform: skew(0deg, 0deg); opacity: 1; }
+            15% { transform: skew(-2deg, -1deg); opacity: 0.9; text-shadow: -2px 0 cyan, 2px 0 magenta; }
+            20% { transform: skew(0deg, 0deg); opacity: 1; }
+        }
+
+        .main-panel {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            min-height: 0;  /* important for flex child */
+            flex-wrap: nowrap;
+        }
+
+        .game-canvas-wrapper {
+            flex: 3;
+            border: 2px solid #00ff41;
+            background: #000000;
+            position: relative;
+            aspect-ratio: 16/9;
+            max-height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #0a0f0a;
+            image-rendering: crisp-edges;
+        }
+
+        .terminal-sidebar {
+            flex: 1.2;
+            background: #0a0a0a;
+            border-left: 2px solid #00ff41;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            color: #00ff41;
+            font-size: 3vw;
+            overflow-y: auto;
+            min-width: 140px;
+        }
+
+        .health-panel {
+            border: 1px solid #00ff41;
+            padding: 6px;
+            background: #000000;
+        }
+
+        .player-portrait {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .pixel-face {
+            width: 40px;
+            height: 40px;
+            background: #1a1a1a;
+            border: 2px solid #00ff41;
+            position: relative;
+            image-rendering: pixelated;
+            flex-shrink: 0;
+        }
+
+        .pixel-face div {
+            position: absolute;
+            background: #00ff41;
+        }
+
+        /* tiny pixel glasses / hoodie simulation */
+        .glasses {
+            top: 12px; left: 6px; width: 28px; height: 6px; background: #00ff41; box-shadow: 0 6px #00ff41;
+        }
+        .hoodie {
+            top: 22px; left: 10px; width: 20px; height: 10px; background: #117711; 
+        }
+
+        .hp-bar {
+            width: 100%;
+            height: 16px;
+            border: 2px solid #00ff41;
+            background: #111;
+            margin: 4px 0;
+            overflow: hidden;
+        }
+
+        .hp-fill {
+            height: 100%;
+            width: 70%;
+            background: #00ff41;
+            box-shadow: 0 0 8px #00ff41;
+        }
+
+        .redacted {
+            font-family: 'Courier New', monospace;
+            background: #00ff4122;
+            padding: 2px;
+            letter-spacing: 1px;
+            font-size: 3vw;
+        }
+
+        .log-window {
+            border: 1px solid #00ff41;
+            background: #000;
+            padding: 4px;
+            height: 120px;
+            overflow-y: auto;
+            font-size: 3vw;
+            line-height: 1.2;
+            scrollbar-color: #00ff41 #111;
+        }
+
+        .log-entry {
+            color: #00ff41;
+            border-bottom: 1px dashed #00ff4144;
+            margin-bottom: 2px;
+            animation: flicker 0.5s infinite;
+        }
+
+        .blink-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 12px;
+            background: #00ff41;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .command-line {
+            background: #000;
+            border: 1px solid #00ff41;
+            padding: 4px;
+            margin-top: auto;
+            font-size: 3.5vw;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* ===== TOUCH CONTROLS ===== */
+        .touch-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            gap: 8px;
+            flex-shrink: 0;
+            background: #0a0a0a;
+            border-top: 2px solid #00ff41;
+            padding: 8px 4px;
+        }
+
+        .move-panel {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-panel {
+            display: flex;
+            gap: 8px;
+        }
+
+        .touch-btn {
+            background: #111;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 6vw;
+            font-weight: bold;
+            padding: 8px 16px;
+            min-width: 70px;
+            text-align: center;
+            border-radius: 0;
+            box-shadow: 0 0 10px #00ff41;
+            text-shadow: 0 0 5px #00ff41;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            transition: 0.1s;
+            line-height: 1;
+        }
+        .touch-btn:active {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 20px #00ff41;
+        }
+        .move-btn {
+            font-size: 8vw;
+            padding: 8px 24px;
+        }
+
+        .keyhint {
+            color: #8aff8a;
+            font-size: 3vw;
+            margin-top: 4px;
+            text-align: center;
+            display: none; /* hide old hint */
+        }
+
+        /* responsive */
+        @media (orientation: portrait) {
+            #rotate-overlay:not(.hidden) {
+                display: flex;
+            }
+            .terminal-container {
+                filter: blur(2px);
+                opacity: 0.3;
+                pointer-events: none;
+            }
+        }
+        @media (orientation: landscape) {
+            #rotate-overlay.hidden {
+                display: none;
+            }
+            .terminal-container {
+                filter: none;
+                opacity: 1;
+                pointer-events: all;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ORIENTATION OVERLAY -->
+    <div id="rotate-overlay" class="">
+        <div class="rotate-icon">📱 ⇄ 🖥️</div>
+        <div>PLEASE ROTATE YOUR DEVICE</div>
+        <div style="font-size: 4vw; margin-top: 20px;">LANDSCAPE MODE REQUIRED</div>
+    </div>
+
+    <div class="terminal-container" id="terminalContainer">
+        <div class="screen-header">
+            <span class="glitch">[ ROOT_ENTITY: AGE++ ]</span>
+            <span>TERMINAL v2.0.26</span>
+        </div>
+
+        <div class="main-panel">
+            <div class="game-canvas-wrapper">
+                <canvas id="gameCanvas" width="960" height="540"></canvas>
+            </div>
+
+            <div class="terminal-sidebar">
+                <div class="health-panel">
+                    <div class="player-portrait">
+                        <div class="pixel-face">
+                            <div class="glasses"></div>
+                            <div class="hoodie"></div>
+                        </div>
+                        <div>
+                            <div style="font-size:4vw;">MYSTRIX</div>
+                            <div class="redacted">HP: 0x??????</div>
+                        </div>
+                    </div>
+                    <div class="hp-bar"><div class="hp-fill" id="playerHpFill" style="width:100%"></div></div>
+                    <div class="redacted" style="text-align:right;">[REDACTED] / 0x3F</div>
+                </div>
+
+                <div class="health-panel">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>BOSS: ROOT_ENTITY</span>
+                        <span class="redacted" id="bossHpLabel">0x??????</span>
+                    </div>
+                    <div class="hp-bar"><div class="hp-fill" id="bossHpFill" style="width:100%; background:#ff0040; box-shadow:0 0 8px red;"></div></div>
+                    <div id="bossLoadingBar" style="font-size:2.5vw; color: cyan;">▰▰▰▰▰▰▰▰▰▰ 30% LOADING</div>
+                </div>
+
+                <div class="log-window" id="logWindow">
+                    <div class="log-entry">> system: TARGET_AGE NOT FOUND</div>
+                    <div class="log-entry">> bypass security... [OK]</div>
+                    <div class="log-entry">> vibe analysis: LEGENDARY</div>
+                    <div class="log-entry">> encrypted health: 0x????????</div>
+                </div>
+
+                <div class="command-line" id="commandLine">
+                    <span id="typingLine">_</span><span class="blink-cursor"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOUCH CONTROLS (mobile) -->
+        <div class="touch-controls">
+            <div class="move-panel">
+                <div class="touch-btn move-btn" id="btnLeft">←</div>
+                <div class="touch-btn move-btn" id="btnRight">→</div>
+            </div>
+            <div class="action-panel">
+                <div class="touch-btn" id="btnDash">A</div>
+                <div class="touch-btn" id="btnShield">S</div>
+                <div class="touch-btn" id="btnChug">D</div>
+                <div class="touch-btn" id="btnCandle">F</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== MOBILE & ORIENTATION ====================
+            const rotateOverlay = document.getElementById('rotate-overlay');
+            function checkOrientation() {
+                if (window.innerHeight > window.innerWidth) {
+                    rotateOverlay.classList.remove('hidden');
+                } else {
+                    rotateOverlay.classList.add('hidden');
+                }
+            }
+            window.addEventListener('resize', checkOrientation);
+            window.addEventListener('orientationchange', checkOrientation);
+            checkOrientation();
+
+            // ==================== PIXEL CYBERPUNK ENGINE ====================
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+
+            // UI references
+            const logWindow = document.getElementById('logWindow');
+            const commandLine = document.getElementById('typingLine');
+            const playerHpFill = document.getElementById('playerHpFill');
+            const bossHpFill = document.getElementById('bossHpFill');
+            const bossHpLabel = document.getElementById('bossHpLabel');
+            const bossLoadingBar = document.getElementById('bossLoadingBar');
+
+            // ---------- GLOBAL STATE ----------
+            const GAME_STATE = { SCAN: 'scan', FIGHT: 'fight', PHASE2: 'phase2', VICTORY: 'victory' };
+            let currentState = GAME_STATE.SCAN;
+
+            // scan timer
+            let scanCounter = 0;
+
+            // player
+            let player = {
+                x: 150, y: 390,
+                width: 28, height: 38,
+                vx: 0,
+                speed: 3,
+                baseSpeed: 3,
+                hp: 63,
+                maxHp: 63,
+                shieldActive: false,
+                shieldCooldown: 0,
+                dashCooldown: 0,
+                shootCooldown: 0,
+                slowed: false,
+                slowTimer: 0
+            };
+
+            // boss
+            let boss = {
+                x: 720, y: 320,
+                width: 90, height: 120,
+                hp: 999,
+                maxHp: 999,
+                phaseTriggered: false,
+                loadingPercent: 30,
+                attackTimer: 0,
+                currentAttack: null,
+                attackDuration: 0,
+                frozen: false,
+                tauntMessage: ''
+            };
+
+            // projectiles & effects
+            let projectiles = [];
+            let forkClones = [];
+            let rainDrops = [];
+            let insults = [];
+            let shockwave = null;
+            let cloudSlowActive = false;
+            let cloudTimer = 0;
+
+            // damage numbers (hex)
+            let damageNumbers = [];
+
+            // log entries queue
+            let logEntries = [
+                "[!] CRITICAL ERROR: TARGET_AGE NOT FOUND",
+                "[!] BYPASSING SECURITY PROTOCOLS...",
+                "[!] ANALYZING VIBE... [VIBE: LEGENDARY]"
+            ];
+            function addLog(msg) {
+                logEntries.unshift(msg);
+                if (logEntries.length > 8) logEntries.pop();
+                renderLog();
+            }
+            function renderLog() {
+                logWindow.innerHTML = logEntries.map(m => `<div class="log-entry">> ${m}</div>`).join('');
+            }
+
+            // command line simulation
+            let cmdText = '';
+            function setCommand(cmd) {
+                cmdText = cmd;
+                commandLine.innerText = cmdText;
+            }
+
+            // ---------- KEYBOARD / TOUCH STATE ----------
+            const keys = {};
+
+            // Unified key handler
+            function setKey(key, state) {
+                keys[key] = state;
+                // optional: visual feedback
+            }
+
+            // Touch button events
+            document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); setKey('arrowleft', true); });
+            document.getElementById('btnLeft').addEventListener('touchend', (e) => { e.preventDefault(); setKey('arrowleft', false); });
+            document.getElementById('btnLeft').addEventListener('touchcancel', (e) => { e.preventDefault(); setKey('arrowleft', false); });
+            document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); setKey('arrowright', true); });
+            document.getElementById('btnRight').addEventListener('touchend', (e) => { e.preventDefault(); setKey('arrowright', false); });
+            document.getElementById('btnRight').addEventListener('touchcancel', (e) => { e.preventDefault(); setKey('arrowright', false); });
+
+            // Action buttons (trigger once per press)
+            document.getElementById('btnDash').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentState === GAME_STATE.FIGHT || currentState === GAME_STATE.PHASE2) {
+                    if (player.dashCooldown <= 0) dashAttack();
+                }
+            });
+            document.getElementById('btnShield').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentState === GAME_STATE.FIGHT || currentState === GAME_STATE.PHASE2) {
+                    if (player.shieldCooldown <= 0) activateShield();
+                }
+            });
+            document.getElementById('btnChug').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentState === GAME_STATE.FIGHT || currentState === GAME_STATE.PHASE2) {
+                    chugDrink();
+                }
+            });
+            document.getElementById('btnCandle').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentState === GAME_STATE.FIGHT || currentState === GAME_STATE.PHASE2) {
+                    if (player.shootCooldown <= 0) shootCandles();
+                }
+            });
+
+            // Also allow keyboard for testing on desktop (keep original)
+            window.addEventListener('keydown', (e) => {
+                if (currentState === GAME_STATE.FIGHT || currentState === GAME_STATE.PHASE2) {
+                    const key = e.key.toLowerCase();
+                    keys[key] = true;
+                    if (key === 'a' && player.dashCooldown <= 0) dashAttack();
+                    if (key === 's' && player.shieldCooldown <= 0) activateShield();
+                    if (key === 'd') chugDrink();
+                    if (key === 'f' && player.shootCooldown <= 0) shootCandles();
+                }
+                if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'a', 's', 'd', 'f'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                keys[key] = false;
+            });
+
+            // movement
+            function handleMovement() {
+                if (currentState !== GAME_STATE.FIGHT && currentState !== GAME_STATE.PHASE2) return;
+                if (boss.frozen) return;
+
+                let move = 0;
+                if (keys['arrowleft'] || keys['left']) move -= 1;
+                if (keys['arrowright'] || keys['right']) move += 1;
+                player.vx = move * player.speed;
+                player.x += player.vx;
+                player.x = Math.max(30, Math.min(550, player.x));
+            }
+
+         
