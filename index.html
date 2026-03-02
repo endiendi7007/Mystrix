@@ -568,3 +568,40 @@
 
     // start everything after a tiny delay (to let images register)
     window.addEventListener('load', () => {
+        // fallback if images never load, we still have arrays
+        animate();
+    });
+
+    // update click counter if gift closed
+    function updateCounterDisplay() {
+        if (gift.closed) {
+            counterSpan.innerText = gift.clickCount;
+        } else {
+            counterSpan.innerText = '🎉';
+        }
+    }
+
+    // override setInterval for counter, but we call inside draw or separate
+    // we'll just update in draw
+    const origDraw = drawScene;
+    drawScene = function() {
+        origDraw();
+        updateCounterDisplay();
+    };
+    drawScene = drawScene.bind(this); // reassign
+
+    // patch animate to use new drawScene
+    const originalAnimate = animate;
+    animate = function() {
+        updateParticles();
+        drawScene();   // our wrapped version
+        requestAnimationFrame(animate);
+    };
+
+    // start
+    animate();
+
+})();
+</script>
+</body>
+</html>
